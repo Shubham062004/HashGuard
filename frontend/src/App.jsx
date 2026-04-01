@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import Profile from './pages/Profile';
 import StudentDashboard from './pages/StudentDashboard';
 import UploadAssignment from './pages/UploadAssignment';
 import SubmissionDetails from './pages/SubmissionDetails';
@@ -19,6 +20,7 @@ function App() {
         <Route path="/dashboard/student/upload" element={<UploadAssignment />} />
         <Route path="/dashboard/student/submissions/:id" element={<SubmissionDetails />} />
         <Route path="/dashboard/teacher" element={<TeacherDashboard />} />
+        <Route path="/dashboard/profile" element={<Profile />} />
         
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
