@@ -1,10 +1,82 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import API from '../utils/api';
 
 const UploadAssignment = () => {
+    const [title, setTitle] = useState('');
+    const [file, setFile] = useState(null);
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState(false);
+    const [uploadData, setUploadData] = useState(null);
+    
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const userInfo = localStorage.getItem('userInfo');
+        if (userInfo) {
+            setUser(JSON.parse(userInfo));
+        } else {
+            navigate('/login');
+        }
+    }, [navigate]);
+
+    const handleFileChange = (e) => {
+        const selectedFile = e.target.files[0];
+        if (selectedFile) {
+            setFile(selectedFile);
+            setError('');
+        }
+    };
+
+    const handleUpload = async (e) => {
+        e.preventDefault();
+        setError('');
+        setSuccess(false);
+
+        if (!title.trim()) {
+            setError('Please provide an assignment title.');
+            return;
+        }
+        if (!file) {
+            setError('Please select a file to upload.');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('file', file);
+
+        setLoading(true);
+        try {
+            const { data } = await API.post('/assignments/upload', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            if (data.success) {
+                setSuccess(true);
+                setUploadData(data.data);
+                setTitle('');
+                setFile(null);
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Upload failed. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text);
+        // Could add a toast here
+    };
+
     return (
         <div className="bg-surface text-on-surface min-h-screen antialiased">
-            {/* SideNavBar (Active: Upload) */}
+            {/* SideNavBar */}
             <aside className="fixed left-0 top-0 h-screen w-64 z-40 bg-slate-50 flex flex-col py-8 px-4 font-sans text-sm font-semibold tracking-tight shadow-sm">
                 <div className="flex items-center gap-3 px-2 mb-10">
                     <div className="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-on-primary">
@@ -33,16 +105,9 @@ const UploadAssignment = () => {
                         Profile
                     </Link>
                 </nav>
-                <div className="mt-auto">
-                    <button className="w-full py-3 px-4 rounded-xl bg-indigo-600 text-white font-bold text-sm shadow-lg hover:shadow-indigo-200 transition-all active:scale-95 flex items-center justify-center gap-2">
-                        <span className="material-symbols-outlined text-sm">add</span>
-                        New Submission
-                    </button>
-                </div>
             </aside>
 
             <main className="ml-64 min-h-screen flex flex-col">
-                {/* Top Header Area (Contextual) */}
                 <header className="flex justify-between items-center px-10 py-6">
                     <div>
                         <h1 className="text-2xl font-extrabold tracking-tight text-on-surface">Secure Document Deposit</h1>
@@ -50,7 +115,7 @@ const UploadAssignment = () => {
                     </div>
                     <div className="flex items-center gap-4">
                         <div className="text-right hidden md:block">
-                            <p className="text-xs font-bold uppercase tracking-widest text-outline">Network Status</p>
+                            <p className="text-xs font-bold uppercase tracking-widest text-outline">Hello, {user?.name || 'Student'}</p>
                             <p className="text-sm font-semibold text-indigo-600 flex items-center gap-1 justify-end">
                                 <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span>
                                 Immutable Layer Active
@@ -59,108 +124,129 @@ const UploadAssignment = () => {
                     </div>
                 </header>
 
-                {/* Centered Upload Content */}
                 <div className="flex-1 flex items-center justify-center p-10">
                     <div className="w-full max-w-2xl">
-                        {/* Main Upload Card */}
-                        <div className="bg-surface-container-lowest rounded-2xl shadow-[0_20px_40px_-10px_rgba(53,37,205,0.08)] p-10 space-y-10 relative overflow-hidden">
-                            {/* Progress Bar (Active State Overlay) */}
-                            <div className="absolute top-0 left-0 w-full h-1 bg-surface-container">
-                                <div className="h-full bg-indigo-600 transition-all duration-700 ease-out" style={{ width: "100%" }}></div>
-                            </div>
+                        <form onSubmit={handleUpload} className="bg-surface-container-lowest rounded-2xl shadow-[0_20px_40px_-10px_rgba(53,37,205,0.08)] p-10 space-y-8 relative overflow-hidden">
+                            {loading && (
+                                <div className="absolute top-0 left-0 w-full h-1 bg-surface-container">
+                                    <div className="h-full bg-indigo-600 animate-progress transition-all"></div>
+                                </div>
+                            )}
                             
-                            {/* Success Toast (State Representation) */}
-                            <div className="flex items-center gap-3 bg-primary-container/10 p-4 rounded-xl border border-primary/10">
-                                <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                                <p className="text-sm font-bold text-primary">File hashing complete. Ready for immutable archival.</p>
-                            </div>
+                            {success && (
+                                <div className="flex items-center gap-3 bg-emerald-50 p-4 rounded-xl border border-emerald-100 animate-fade-in">
+                                    <span className="material-symbols-outlined text-emerald-600" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                                    <p className="text-sm font-bold text-emerald-800">Assignment successfully hashed and archived.</p>
+                                </div>
+                            )}
 
-                            {/* Form Content */}
-                            <div className="space-y-8">
-                                {/* Assignment Title Field */}
+                            {error && (
+                                <div className="flex items-center gap-3 bg-red-50 p-4 rounded-xl border border-red-100">
+                                    <span className="material-symbols-outlined text-red-600">error</span>
+                                    <p className="text-sm font-bold text-red-800">{error}</p>
+                                </div>
+                            )}
+
+                            <div className="space-y-6">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold uppercase tracking-widest text-outline ml-1">Assignment Title</label>
-                                    <input className="w-full bg-surface-container-low border-none rounded-xl px-4 py-4 text-on-surface font-semibold focus:ring-2 focus:ring-primary/20 transition-all outline-none" placeholder="Enter document name..." type="text" defaultValue="Blockchain Ethics Final Thesis_v2" />
+                                    <input 
+                                        className="w-full bg-surface-container-low border-none rounded-xl px-4 py-4 text-on-surface font-semibold focus:ring-2 focus:ring-primary/20 transition-all outline-none" 
+                                        placeholder="Enter document name..." 
+                                        type="text" 
+                                        value={title}
+                                        onChange={(e) => setTitle(e.target.value)}
+                                        required
+                                    />
                                 </div>
 
-                                {/* Drag and Drop Area */}
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold uppercase tracking-widest text-outline ml-1">Document Upload</label>
-                                    <div className="group relative cursor-pointer">
-                                        <div className="w-full border-2 border-dashed border-outline-variant bg-surface-container-low rounded-2xl p-12 transition-all hover:bg-white hover:border-indigo-600/40 drag-glow flex flex-col items-center justify-center text-center gap-4">
-                                            <div className="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 transition-transform group-hover:scale-110">
-                                                <span className="material-symbols-outlined text-3xl">upload_file</span>
+                                    <div className="group relative">
+                                        <input 
+                                            type="file" 
+                                            id="file-upload" 
+                                            className="hidden" 
+                                            onChange={handleFileChange}
+                                        />
+                                        <label 
+                                            htmlFor="file-upload"
+                                            className="w-full border-2 border-dashed border-outline-variant bg-surface-container-low rounded-2xl p-10 transition-all hover:bg-white hover:border-indigo-600/40 cursor-pointer flex flex-col items-center justify-center text-center gap-4"
+                                        >
+                                            <div className="w-14 h-14 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 transition-transform group-hover:scale-110">
+                                                <span className="material-symbols-outlined text-2xl">upload_file</span>
                                             </div>
                                             <div>
-                                                <p className="text-lg font-extrabold text-on-surface tracking-tight">Final_Thesis_Revision.pdf</p>
-                                                <p className="text-sm text-outline mt-1">Supported formats: <span className="font-bold text-on-surface">PDF, DOC</span></p>
+                                                <p className="text-base font-extrabold text-on-surface tracking-tight">
+                                                    {file ? file.name : 'Click to browse or drag & drop'}
+                                                </p>
+                                                <p className="text-xs text-outline mt-1">Supported: <span className="font-bold text-on-surface">PDF, DOC, Images (Max 10MB)</span></p>
                                             </div>
-                                            {/* File Details (Post-upload state) */}
-                                            <div className="flex items-center gap-4 mt-2">
-                                                <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-container rounded-full">
-                                                    <span className="material-symbols-outlined text-sm">database</span>
-                                                    <span className="text-xs font-bold text-on-surface-variant">2.4 MB</span>
+                                            {file && (
+                                                <div className="flex items-center gap-2 px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-bold">
+                                                    <span className="material-symbols-outlined text-xs">database</span>
+                                                    {(file.size / (1024 * 1024)).toFixed(2)} MB
                                                 </div>
-                                                <div className="flex items-center gap-1.5 px-3 py-1 bg-surface-container rounded-full">
-                                                    <span className="material-symbols-outlined text-sm">verified_user</span>
-                                                    <span className="text-xs font-bold text-on-surface-variant">SHA-256 Verified</span>
-                                                </div>
-                                            </div>
-                                        </div>
+                                            )}
+                                        </label>
                                     </div>
                                 </div>
 
-                                {/* Proof Seal (The Cryptographic Identity Component) */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-1">
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Generated Archive Hash</label>
-                                        <div className="flex items-center justify-between">
-                                            <code className="text-sm font-mono text-indigo-600 font-bold tracking-tight">0x7d1...822e</code>
-                                            <span className="material-symbols-outlined text-slate-400 cursor-pointer hover:text-indigo-600 transition-colors">content_copy</span>
+                                {uploadData && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-slide-up">
+                                        <div className="p-4 bg-indigo-50 rounded-xl border border-indigo-100 flex flex-col gap-1 ring-2 ring-indigo-200/50">
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Generated Archive Hash</label>
+                                            <div className="flex items-center justify-between">
+                                                <code className="text-xs font-mono text-indigo-700 font-bold truncate mr-2" title={uploadData.hash}>
+                                                    {uploadData.hash.slice(0, 12)}...{uploadData.hash.slice(-8)}
+                                                </code>
+                                                <button 
+                                                    type="button"
+                                                    onClick={() => copyToClipboard(uploadData.hash)}
+                                                    className="material-symbols-outlined text-indigo-400 hover:text-indigo-600 transition-colors text-sm"
+                                                >
+                                                    content_copy
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-1">
+                                            <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">System Timestamp</label>
+                                            <div className="flex items-center gap-2">
+                                                <span className="material-symbols-outlined text-indigo-600 text-sm">schedule</span>
+                                                <span className="text-xs font-bold text-on-surface">
+                                                    {new Date(uploadData.timestamp).toLocaleString()}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-1">
-                                        <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Timestamp Preview</label>
-                                        <div className="flex items-center gap-2">
-                                            <span className="material-symbols-outlined text-indigo-600 text-sm">schedule</span>
-                                            <span className="text-sm font-bold text-on-surface">Oct 24, 2024, 14:30 UTC</span>
-                                        </div>
-                                    </div>
-                                </div>
+                                )}
                             </div>
 
-                            {/* Final Action */}
                             <div className="pt-4">
-                                <button className="group w-full py-5 rounded-xl bg-gradient-to-br from-primary to-primary-container text-white font-extrabold text-lg shadow-[0_10px_20px_rgba(53,37,205,0.2)] hover:shadow-[0_15px_30px_rgba(53,37,205,0.3)] transition-all flex items-center justify-center gap-3">
-                                    <span>Execute Immutable Deposit</span>
+                                <button 
+                                    type="submit"
+                                    disabled={loading}
+                                    className="group w-full py-5 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-800 text-white font-extrabold text-lg shadow-[0_10px_20px_rgba(79,70,229,0.2)] hover:shadow-[0_15px_30px_rgba(79,70,229,0.3)] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+                                >
+                                    <span>{loading ? 'Executing Hashing...' : 'Execute Immutable Deposit'}</span>
                                     <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
                                 </button>
-                                <p className="text-center text-xs text-outline font-medium mt-4">Once submitted, this document hash becomes a permanent record in the archive.</p>
+                                <p className="text-center text-[10px] text-outline font-medium mt-4 uppercase tracking-widest">Cryptographic permanence is guaranteed upon execution</p>
                             </div>
-                        </div>
+                        </form>
                     </div>
                 </div>
 
-                {/* Footer (Shared Component) */}
                 <footer className="w-full border-t border-slate-200/15 bg-slate-50 flex flex-col md:flex-row justify-between items-center px-8 py-12 max-w-7xl mx-auto gap-6 mt-auto font-sans tracking-tight">
                     <div className="flex flex-col gap-2">
                         <span className="text-lg font-bold text-slate-900">HashGuard</span>
                         <p className="text-[10px] uppercase tracking-widest font-bold text-slate-500">© 2024 HashGuard. The Immutable Archive. All rights reserved.</p>
                     </div>
-                    <div className="flex flex-wrap gap-8">
-                        <Link className="text-[10px] uppercase tracking-widest font-bold text-slate-500 hover:text-indigo-500 transition-colors" to="#">Privacy Policy</Link>
-                        <Link className="text-[10px] uppercase tracking-widest font-bold text-slate-500 hover:text-indigo-500 transition-colors" to="#">Terms of Service</Link>
-                        <Link className="text-[10px] uppercase tracking-widest font-bold text-slate-500 hover:text-indigo-500 transition-colors" to="#">Security Whitepaper</Link>
-                        <Link className="text-[10px] uppercase tracking-widest font-bold text-slate-500 hover:text-indigo-500 transition-colors" to="#">Contact Support</Link>
-                    </div>
                 </footer>
             </main>
-
-            {/* Floating Background Decorative Elements */}
-            <div className="fixed top-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-100/30 rounded-full blur-[120px] -z-10"></div>
-            <div className="fixed bottom-[-10%] left-[-5%] w-[30%] h-[30%] bg-slate-200/40 rounded-full blur-[100px] -z-10"></div>
         </div>
     );
 };
 
 export default UploadAssignment;
+

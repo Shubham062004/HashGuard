@@ -1,7 +1,52 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import API from '../utils/api';
 
 const Login = () => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [role, setRole] = useState('student');
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
+
+    const [showPassword, setShowPassword] = useState(false);
+
+    const navigate = useNavigate();
+
+    // Redirect if already logged in
+    useEffect(() => {
+        const userInfo = localStorage.getItem('userInfo');
+        if (userInfo) {
+            const user = JSON.parse(userInfo);
+            if (user.role === 'teacher') navigate('/dashboard/teacher');
+            else navigate('/dashboard/student');
+        }
+    }, [navigate]);
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+
+        try {
+            const { data } = await API.post('/auth/login', { email, password });
+            
+            // Store user data in localStorage
+            localStorage.setItem('userInfo', JSON.stringify(data));
+            
+            // Redirect based on role
+            if (data.role === 'teacher') {
+                navigate('/dashboard/teacher');
+            } else {
+                navigate('/dashboard/student');
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <main className="min-h-screen flex flex-col md:flex-row overflow-hidden bg-surface text-on-surface antialiased">
             {/* Left Side: Visual Anchor (Hidden on Mobile for focus) */}
@@ -59,12 +104,27 @@ const Login = () => {
                         <h2 className="text-3xl font-bold tracking-tight text-on-surface">Welcome back</h2>
                         <p className="text-on-surface-variant font-medium">Please enter your credentials to access the vault.</p>
                     </header>
-                    <form className="space-y-6">
+
+                    {error && (
+                        <div className="bg-error-container text-on-error-container p-4 rounded-xl text-sm font-bold animate-shake">
+                            {error}
+                        </div>
+                    )}
+
+                    <form className="space-y-6" onSubmit={handleLogin}>
                         {/* Email Field */}
                         <div className="space-y-2">
                             <label className="text-sm font-bold tracking-tight text-on-surface-variant font-label" htmlFor="email">Work Email</label>
                             <div className="relative">
-                                <input className="w-full px-4 py-3.5 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all duration-200 placeholder:text-outline/50 text-on-surface font-medium" id="email" placeholder="name@university.edu" type="email" />
+                                <input 
+                                    className="w-full px-4 py-3.5 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all duration-200 placeholder:text-outline/50 text-on-surface font-medium" 
+                                    id="email" 
+                                    placeholder="name@university.edu" 
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required
+                                />
                             </div>
                         </div>
                         {/* Password Field */}
@@ -74,40 +134,34 @@ const Login = () => {
                                 <Link className="text-xs font-bold text-primary hover:text-on-primary-fixed-variant transition-colors" to="#">Forgot password?</Link>
                             </div>
                             <div className="relative group">
-                                <input className="w-full px-4 py-3.5 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all duration-200 placeholder:text-outline/50 text-on-surface font-medium" id="password" placeholder="••••••••" type="password" />
-                                <button className="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors" type="button">
-                                    <span className="material-symbols-outlined text-xl">visibility</span>
+                                <input 
+                                    className="w-full px-4 py-3.5 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all duration-200 placeholder:text-outline/50 text-on-surface font-medium" 
+                                    id="password" 
+                                    placeholder="••••••••" 
+                                    type={showPassword ? "text" : "password"}
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    required
+                                />
+                                <button 
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors focus:outline-none"
+                                >
+                                    <span className="material-symbols-outlined text-xl">
+                                        {showPassword ? "visibility_off" : "visibility"}
+                                    </span>
                                 </button>
                             </div>
                         </div>
-                        {/* Role Selection Hint */}
-                        <div className="space-y-3">
-                            <span className="text-xs font-bold uppercase tracking-widest text-outline/70 block">Identify your role</span>
-                            <div className="grid grid-cols-2 gap-3">
-                                <label className="cursor-pointer group">
-                                    <input defaultChecked name="role" type="radio" className="hidden peer" />
-                                    <div className="flex items-center justify-center gap-2 p-3 rounded-xl border border-outline-variant/20 bg-surface-container-low peer-checked:bg-surface-container peer-checked:border-primary peer-checked:text-primary transition-all group-hover:bg-surface-container-high">
-                                        <span className="material-symbols-outlined text-lg">school</span>
-                                        <span className="text-sm font-bold">Student</span>
-                                    </div>
-                                </label>
-                                <label className="cursor-pointer group">
-                                    <input name="role" type="radio" className="hidden peer" />
-                                    <div className="flex items-center justify-center gap-2 p-3 rounded-xl border border-outline-variant/20 bg-surface-container-low peer-checked:bg-surface-container peer-checked:border-primary peer-checked:text-primary transition-all group-hover:bg-surface-container-high">
-                                        <span className="material-symbols-outlined text-lg">workspace_premium</span>
-                                        <span className="text-sm font-bold">Teacher</span>
-                                    </div>
-                                </label>
-                            </div>
-                        </div>
-                        {/* Options */}
-                        <div className="flex items-center gap-3">
-                            <input className="w-5 h-5 rounded border-outline-variant/30 text-primary focus:ring-primary/20 bg-surface-container-low" id="remember" type="checkbox" />
-                            <label className="text-sm font-medium text-on-surface-variant" htmlFor="remember">Remember me for 30 days</label>
-                        </div>
+                        
                         {/* Primary Action */}
-                        <button className="w-full fluid-indigo-gradient text-on-primary py-4 rounded-xl font-bold text-lg shadow-ambient hover:opacity-95 active:scale-[0.98] transition-all duration-200" type="submit">
-                            Login
+                        <button 
+                            className="w-full fluid-indigo-gradient text-on-primary py-4 rounded-xl font-bold text-lg shadow-ambient hover:opacity-95 active:scale-[0.98] transition-all duration-200 disabled:opacity-50" 
+                            type="submit"
+                            disabled={loading}
+                        >
+                            {loading ? 'Authenticating...' : 'Login'}
                         </button>
                     </form>
                     <footer className="text-center space-y-8">
