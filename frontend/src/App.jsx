@@ -10,6 +10,8 @@ import SubmissionDetails from './pages/SubmissionDetails';
 import TeacherDashboard from './pages/TeacherDashboard';
 import Verification from './pages/Verification';
 
+import ProtectedRoute from './components/ProtectedRoute';
+
 function App() {
   return (
     <BrowserRouter>
@@ -17,11 +19,52 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/dashboard/student" element={<StudentDashboard />} />
-        <Route path="/dashboard/student/upload" element={<UploadAssignment />} />
-        <Route path="/dashboard/student/submissions/:id" element={<SubmissionDetails />} />
-        <Route path="/dashboard/teacher" element={<TeacherDashboard />} />
-        <Route path="/dashboard/profile" element={<Profile />} />
+        
+        {/* Protected Student Routes */}
+        <Route 
+          path="/dashboard/student" 
+          element={
+            <ProtectedRoute role="student">
+              <StudentDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/dashboard/student/upload" 
+          element={
+            <ProtectedRoute role="student">
+              <UploadAssignment />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/dashboard/student/submissions/:id" 
+          element={
+             <ProtectedRoute role="student">
+              <SubmissionDetails />
+             </ProtectedRoute>
+          } 
+        />
+        
+        {/* Protected Teacher Routes */}
+        <Route 
+          path="/dashboard/teacher" 
+          element={
+            <ProtectedRoute role="teacher">
+              <TeacherDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        
+        {/* General Protected Routes */}
+        <Route 
+          path="/dashboard/profile" 
+          element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } 
+        />
         <Route path="/verification" element={<Verification />} />
         
         {/* Fallback */}
