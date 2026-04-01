@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default function Landing() {
   return (
@@ -13,8 +14,8 @@ export default function Landing() {
             <a className="text-slate-600 dark:text-slate-400 hover:text-indigo-500 transition-colors" href="#about">About</a>
           </div>
           <div className="flex items-center gap-4">
-            <button className="px-5 py-2 text-sm font-bold text-slate-600 hover:text-indigo-600 transition-all scale-95 active:scale-90">Login</button>
-            <button className="px-6 py-2.5 fluid-gradient text-white text-sm font-bold rounded-lg shadow-sm hover:opacity-90 transition-all scale-95 active:scale-90">Get Started</button>
+            <Link to="/login" className="px-5 py-2 text-sm font-bold text-slate-600 hover:text-indigo-600 transition-all scale-95 active:scale-90">Login</Link>
+            <Link to="/signup" className="px-6 py-2.5 fluid-gradient text-white text-sm font-bold rounded-lg shadow-sm hover:opacity-90 transition-all scale-95 active:scale-90">Get Started</Link>
           </div>
         </div>
       </nav>
@@ -37,7 +38,7 @@ export default function Landing() {
               Verify your work with SHA-256 hashing and immutable timestamping. Every submission is a prestigious document held within a secure, cryptographic vault.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <button className="px-8 py-4 fluid-gradient text-white font-bold rounded-lg text-lg shadow-lg hover:shadow-indigo-500/20 transition-all">Get Started Today</button>
+              <Link to="/signup" className="px-8 py-4 fluid-gradient text-white font-bold rounded-lg text-lg shadow-lg hover:shadow-indigo-500/20 transition-all flex items-center justify-center">Get Started Today</Link>
               <button className="px-8 py-4 bg-surface-container-highest text-primary font-bold rounded-lg text-lg hover:bg-surface-container-high transition-all">Watch Demo</button>
             </div>
           </div>
@@ -206,7 +207,7 @@ export default function Landing() {
             <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-6">Start submitting securely today</h2>
             <p className="text-on-surface-variant text-lg max-w-2xl mx-auto mb-10">Join thousands of students and institutions preserving academic integrity through the immutable archive.</p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="px-10 py-5 fluid-gradient text-white font-extrabold rounded-xl text-lg hover:scale-[1.02] transition-transform shadow-lg">Create Free Account</button>
+              <Link to="/signup" className="px-10 py-5 fluid-gradient text-white font-extrabold rounded-xl text-lg hover:scale-[1.02] transition-transform shadow-lg flex items-center justify-center">Create Free Account</Link>
               <button className="px-10 py-5 bg-white text-on-surface border border-surface-container font-extrabold rounded-xl text-lg hover:bg-surface-container transition-all">Contact Institutional Sales</button>
             </div>
             <p className="mt-8 text-xs text-on-surface-variant uppercase tracking-widest font-bold">No credit card required for individual students</p>
