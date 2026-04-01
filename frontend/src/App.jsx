@@ -6,6 +6,7 @@ import Signup from './pages/Signup';
 import StudentDashboard from './pages/StudentDashboard';
 import UploadAssignment from './pages/UploadAssignment';
 import SubmissionDetails from './pages/SubmissionDetails';
+import TeacherDashboard from './pages/TeacherDashboard';
 
 function App() {
   return (
@@ -17,6 +18,7 @@ function App() {
         <Route path="/dashboard/student" element={<StudentDashboard />} />
         <Route path="/dashboard/student/upload" element={<UploadAssignment />} />
         <Route path="/dashboard/student/submissions/:id" element={<SubmissionDetails />} />
+        <Route path="/dashboard/teacher" element={<TeacherDashboard />} />
         
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
