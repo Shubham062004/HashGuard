@@ -1,7 +1,26 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Profile = () => {
+    const [user, setUser] = useState(null);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const userInfo = localStorage.getItem('userInfo');
+        if (userInfo) {
+            setUser(JSON.parse(userInfo));
+        } else {
+            navigate('/login');
+        }
+    }, [navigate]);
+
+    const handleLogout = () => {
+        localStorage.removeItem('userInfo');
+        navigate('/login');
+    };
+
+    if (!user) return null; // Or a loading spinner
+
     return (
         <div className="bg-background text-on-surface font-body min-h-screen antialiased">
             {/* Sidebar (SideNavBar) */}
@@ -11,15 +30,15 @@ const Profile = () => {
                     <p className="text-xs font-medium text-slate-500">Tamper-Proof System</p>
                 </div>
                 <nav className="flex-1 space-y-1">
-                    <Link className="text-slate-600 px-4 py-2 hover:bg-slate-100 flex items-center gap-3 transition-transform duration-200 hover:translate-x-1 font-medium text-sm rounded-lg" to="/dashboard/student">
+                    <Link className="text-slate-600 px-4 py-2 hover:bg-slate-100 flex items-center gap-3 transition-transform duration-200 hover:translate-x-1 font-medium text-sm rounded-lg" to={user.role === 'teacher' ? "/dashboard/teacher" : "/dashboard/student"}>
                         <span className="material-symbols-outlined">dashboard</span>
                         Overview
                     </Link>
-                    <Link className="text-slate-600 px-4 py-2 hover:bg-slate-100 flex items-center gap-3 transition-transform duration-200 hover:translate-x-1 font-medium text-sm rounded-lg" to="/dashboard/student/submissions">
+                    <Link className="text-slate-600 px-4 py-2 hover:bg-slate-100 flex items-center gap-3 transition-transform duration-200 hover:translate-x-1 font-medium text-sm rounded-lg" to={user.role === 'teacher' ? "#" : "/dashboard/student/submissions"}>
                         <span className="material-symbols-outlined">description</span>
                         Submissions
                     </Link>
-                    <Link className="text-slate-600 px-4 py-2 hover:bg-slate-100 flex items-center gap-3 transition-transform duration-200 hover:translate-x-1 font-medium text-sm rounded-lg" to="/dashboard/student/verification">
+                    <Link className="text-slate-600 px-4 py-2 hover:bg-slate-100 flex items-center gap-3 transition-transform duration-200 hover:translate-x-1 font-medium text-sm rounded-lg" to="/verification">
                         <span className="material-symbols-outlined">verified_user</span>
                         Verification
                     </Link>
@@ -33,10 +52,13 @@ const Profile = () => {
                         <span className="material-symbols-outlined">help</span>
                         Support
                     </Link>
-                    <Link className="text-slate-600 px-4 py-2 hover:bg-slate-100 flex items-center gap-3 transition-transform duration-200 hover:translate-x-1 font-medium text-sm rounded-lg" to="/login">
+                    <button 
+                        onClick={handleLogout}
+                        className="w-full text-slate-600 px-4 py-2 hover:bg-slate-100 flex items-center gap-3 transition-transform duration-200 hover:translate-x-1 font-medium text-sm rounded-lg"
+                    >
                         <span className="material-symbols-outlined">logout</span>
                         Sign Out
-                    </Link>
+                    </button>
                 </div>
             </aside>
 
@@ -45,9 +67,9 @@ const Profile = () => {
                 <div className="flex items-center gap-8">
                     <div className="text-xl font-extrabold tracking-tighter text-indigo-700">HashGuard</div>
                     <nav className="hidden md:flex gap-6 items-center">
-                        <Link className="text-slate-500 hover:text-indigo-500 transition-colors text-sm font-inter tracking-tight" to="/dashboard/student">Dashboard</Link>
-                        <Link className="text-slate-500 hover:text-indigo-500 transition-colors text-sm font-inter tracking-tight" to="/dashboard/student/verification">Verification</Link>
-                        <Link className="text-slate-500 hover:text-indigo-500 transition-colors text-sm font-inter tracking-tight" to="/dashboard/student/submissions">Submissions</Link>
+                        <Link className="text-slate-500 hover:text-indigo-500 transition-colors text-sm font-inter tracking-tight" to={user.role === 'teacher' ? "/dashboard/teacher" : "/dashboard/student"}>Dashboard</Link>
+                        <Link className="text-slate-500 hover:text-indigo-500 transition-colors text-sm font-inter tracking-tight" to="/verification">Verification</Link>
+                        <Link className="text-slate-500 hover:text-indigo-500 transition-colors text-sm font-inter tracking-tight" to={user.role === 'teacher' ? "#" : "/dashboard/student/submissions"}>Submissions</Link>
                     </nav>
                 </div>
                 <div className="flex items-center gap-4">
@@ -76,7 +98,7 @@ const Profile = () => {
                     <section className="lg:col-span-8 bg-surface-container-lowest rounded-xl p-8 shadow-[0_20px_40px_-10px_rgba(53,37,205,0.08)] flex flex-col md:flex-row gap-8 items-center md:items-start border border-transparent">
                         <div className="relative group">
                             <div className="w-32 h-32 md:w-40 md:h-40 rounded-2xl overflow-hidden relative shadow-xl">
-                                <img alt="User avatar" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBwteYblVCiydoqQRnPQR72pkXCQSbVYb7txmJXckpVT9Tgoe2ENgbwy4VKyhPZSjfObuk66XG-Jrp9vcKyFerWobSLwG8lEvMtOyM348edpF3e9qrrjRum9w5LAfS8pKYyclfjq1Xzq-HVBOxF6DwhLx56pwAJPFU0cZ2iy0-FSEIap4RumOOmihbjfhxXUJ_ZVTRHXign0rJ69OUo9E8xbjTbrvMrGD4NCqd6KChWksTZsjSmJirZRYlFp7BShM-Owa5pIHtq-18" />
+                                <img alt="User avatar" className="w-full h-full object-cover" src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name}`} />
                                 <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm cursor-pointer">
                                     <span className="material-symbols-outlined text-white text-3xl">photo_camera</span>
                                 </div>
@@ -88,27 +110,27 @@ const Profile = () => {
                         <div className="flex-1 text-center md:text-left space-y-4">
                             <div>
                                 <p className="text-xs font-bold tracking-widest text-primary uppercase font-label mb-1">Identity Profile</p>
-                                <h3 className="text-3xl font-bold text-on-surface tracking-tight">Dr. Julian Sterling</h3>
-                                <p className="text-on-surface-variant font-medium mt-1">julian.sterling@hashguard.edu</p>
+                                <h3 className="text-3xl font-bold text-on-surface tracking-tight">{user.name}</h3>
+                                <p className="text-on-surface-variant font-medium mt-1">{user.email}</p>
                             </div>
                             <div className="flex flex-wrap justify-center md:justify-start gap-3">
                                 <div className="flex items-center gap-2 bg-surface-container px-4 py-2 rounded-lg">
-                                    <span className="material-symbols-outlined text-primary text-sm">school</span>
-                                    <span className="text-sm font-semibold text-secondary">Senior Teacher</span>
+                                    <span className="material-symbols-outlined text-primary text-sm">{user.role === 'teacher' ? 'workspace_premium' : 'school'}</span>
+                                    <span className="text-sm font-semibold text-secondary capitalize">{user.role} Account</span>
                                 </div>
                                 <div className="flex items-center gap-2 bg-surface-container px-4 py-2 rounded-lg">
                                     <span className="material-symbols-outlined text-primary text-sm">id_card</span>
-                                    <span className="text-sm font-semibold text-secondary">ID: 8829-X</span>
+                                    <span className="text-sm font-semibold text-secondary uppercase">ID: {user._id.slice(-6)}</span>
                                 </div>
                             </div>
                             <div className="pt-4 flex items-center gap-4 text-xs text-on-surface-variant font-medium">
                                 <span className="flex items-center gap-1">
                                     <span className="material-symbols-outlined text-sm">calendar_today</span>
-                                    Joined Oct 2023
+                                    Joined Recently
                                 </span>
                                 <span className="flex items-center gap-1">
                                     <span className="material-symbols-outlined text-sm">location_on</span>
-                                    London, UK
+                                    System Origin
                                 </span>
                             </div>
                         </div>

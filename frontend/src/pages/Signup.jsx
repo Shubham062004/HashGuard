@@ -1,7 +1,72 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import API from '../utils/api';
 
 const Signup = () => {
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [role, setRole] = useState('student');
+    const [error, setError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState({});
+    const [loading, setLoading] = useState(false);
+
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    const navigate = useNavigate();
+
+    const validateForm = () => {
+        const errors = {};
+        if (!name) errors.name = 'Please fill this field';
+        if (!email) errors.email = 'Please fill this field';
+        if (!password) {
+            errors.password = 'Please fill this field';
+        } else if (password.length < 8) {
+            errors.password = 'Password must be at least 8 characters long';
+        }
+        if (!confirmPassword) errors.confirmPassword = 'Please fill this field';
+        else if (password !== confirmPassword) {
+            errors.confirmPassword = 'Passwords do not match';
+        }
+
+        setFieldErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
+
+    const handleSignup = async (e) => {
+        e.preventDefault();
+        setError('');
+        setFieldErrors({});
+
+        if (!validateForm()) return;
+
+        setLoading(true);
+
+        try {
+            const { data } = await API.post('/auth/register', {
+                name,
+                email,
+                password,
+                role
+            });
+            
+            // Redirect to login on success
+            navigate('/login');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Registration failed. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getInputClass = (fieldName) => {
+        const baseClass = "w-full px-4 py-3 bg-surface-container-low border-2 rounded-xl focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all duration-200 placeholder:text-outline/50 text-on-surface font-medium";
+        const errorClass = fieldErrors[fieldName] ? "border-error" : "border-transparent";
+        return `${baseClass} ${errorClass}`;
+    };
+
     return (
         <main className="min-h-screen flex flex-col md:flex-row overflow-hidden bg-surface text-on-surface antialiased">
             {/* Left Side: Visual Anchor (Branding & Graphic) */}
@@ -59,31 +124,72 @@ const Signup = () => {
                         <h2 className="text-3xl font-bold tracking-tight text-on-surface">Join the Archive</h2>
                         <p className="text-on-surface-variant font-medium">Create your tamper-proof identity to start securing academic excellence.</p>
                     </header>
-                    <form className="space-y-5">
+
+                    {error && (
+                        <div className="bg-error-container text-on-error-container p-4 rounded-xl text-sm font-bold animate-shake">
+                            {error}
+                        </div>
+                    )}
+
+                    <form className="space-y-5" onSubmit={handleSignup} noValidate>
                         {/* Full Name */}
                         <div className="space-y-2">
                             <label className="text-sm font-bold tracking-tight text-on-surface-variant font-label" htmlFor="full-name">Full Name</label>
-                            <input className="w-full px-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all duration-200 placeholder:text-outline/50 text-on-surface font-medium" id="full-name" placeholder="Enter your legal name" type="text" />
+                            <input 
+                                className={getInputClass('name')}
+                                id="full-name" 
+                                placeholder="Enter your legal name" 
+                                type="text"
+                                value={name}
+                                onChange={(e) => {
+                                    setName(e.target.value);
+                                    if (fieldErrors.name) setFieldErrors(prev => ({ ...prev, name: '' }));
+                                }}
+                            />
+                            {fieldErrors.name && <p className="text-error text-[10px] font-bold uppercase tracking-tight">{fieldErrors.name}</p>}
                         </div>
                         {/* Email Field */}
                         <div className="space-y-2">
                             <label className="text-sm font-bold tracking-tight text-on-surface-variant font-label" htmlFor="email">Work Email</label>
-                            <input className="w-full px-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all duration-200 placeholder:text-outline/50 text-on-surface font-medium" id="email" placeholder="name@university.edu" type="email" />
+                            <input 
+                                className={getInputClass('email')}
+                                id="email" 
+                                placeholder="name@university.edu" 
+                                type="email"
+                                value={email}
+                                onChange={(e) => {
+                                    setEmail(e.target.value);
+                                    if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: '' }));
+                                }}
+                            />
+                            {fieldErrors.email && <p className="text-error text-[10px] font-bold uppercase tracking-tight">{fieldErrors.email}</p>}
                         </div>
                         {/* Role Selection */}
                         <div className="space-y-3">
                             <span className="text-xs font-bold uppercase tracking-widest text-outline/70 block">Identify your role</span>
                             <div className="grid grid-cols-2 gap-3">
                                 <label className="cursor-pointer group">
-                                    <input defaultChecked name="role" type="radio" className="hidden peer" />
-                                    <div className="flex items-center justify-center gap-2 p-3 rounded-xl border border-outline-variant/20 bg-surface-container-low peer-checked:bg-surface-container peer-checked:border-primary peer-checked:text-primary transition-all group-hover:bg-surface-container-high">
+                                    <input 
+                                        name="role" 
+                                        type="radio" 
+                                        className="hidden peer" 
+                                        checked={role === 'student'}
+                                        onChange={() => setRole('student')}
+                                    />
+                                    <div className="flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-outline-variant/20 bg-surface-container-low peer-checked:bg-surface-container peer-checked:border-primary peer-checked:text-primary transition-all group-hover:bg-surface-container-high">
                                         <span className="material-symbols-outlined text-lg">school</span>
                                         <span className="text-sm font-bold">Student</span>
                                     </div>
                                 </label>
                                 <label className="cursor-pointer group">
-                                    <input name="role" type="radio" className="hidden peer" />
-                                    <div className="flex items-center justify-center gap-2 p-3 rounded-xl border border-outline-variant/20 bg-surface-container-low peer-checked:bg-surface-container peer-checked:border-primary peer-checked:text-primary transition-all group-hover:bg-surface-container-high">
+                                    <input 
+                                        name="role" 
+                                        type="radio" 
+                                        className="hidden peer" 
+                                        checked={role === 'teacher'}
+                                        onChange={() => setRole('teacher')}
+                                    />
+                                    <div className="flex items-center justify-center gap-2 p-3 rounded-xl border-2 border-outline-variant/20 bg-surface-container-low peer-checked:bg-surface-container peer-checked:border-primary peer-checked:text-primary transition-all group-hover:bg-surface-container-high">
                                         <span className="material-symbols-outlined text-lg">workspace_premium</span>
                                         <span className="text-sm font-bold">Teacher</span>
                                     </div>
@@ -94,31 +200,66 @@ const Signup = () => {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <label className="text-sm font-bold tracking-tight text-on-surface-variant font-label" htmlFor="password">Password</label>
-                                <input className="w-full px-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all duration-200 placeholder:text-outline/50 text-on-surface font-medium" id="password" placeholder="••••••••" type="password" />
+                                <div className="relative">
+                                    <input 
+                                        className={getInputClass('password')}
+                                        id="password" 
+                                        placeholder="••••••••" 
+                                        type={showPassword ? "text" : "password"}
+                                        value={password}
+                                        onChange={(e) => {
+                                            setPassword(e.target.value);
+                                            if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: '' }));
+                                        }}
+                                    />
+                                    <button 
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors focus:outline-none"
+                                    >
+                                        <span className="material-symbols-outlined text-xl">
+                                            {showPassword ? "visibility_off" : "visibility"}
+                                        </span>
+                                    </button>
+                                </div>
+                                {fieldErrors.password && <p className="text-error text-[10px] font-bold uppercase tracking-tight">{fieldErrors.password}</p>}
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-bold tracking-tight text-on-surface-variant font-label" htmlFor="confirm-password">Confirm</label>
-                                <input className="w-full px-4 py-3 bg-surface-container-low border-none rounded-xl focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all duration-200 placeholder:text-outline/50 text-on-surface font-medium" id="confirm-password" placeholder="••••••••" type="password" />
+                                <div className="relative">
+                                    <input 
+                                        className={getInputClass('confirmPassword')}
+                                        id="confirm-password" 
+                                        placeholder="••••••••" 
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        value={confirmPassword}
+                                        onChange={(e) => {
+                                            setConfirmPassword(e.target.value);
+                                            if (fieldErrors.confirmPassword) setFieldErrors(prev => ({ ...prev, confirmPassword: '' }));
+                                        }}
+                                    />
+                                    <button 
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                        className="absolute right-4 top-1/2 -translate-y-1/2 text-outline hover:text-primary transition-colors focus:outline-none"
+                                    >
+                                        <span className="material-symbols-outlined text-xl">
+                                            {showConfirmPassword ? "visibility_off" : "visibility"}
+                                        </span>
+                                    </button>
+                                </div>
+                                {fieldErrors.confirmPassword && <p className="text-error text-[10px] font-bold uppercase tracking-tight">{fieldErrors.confirmPassword}</p>}
                             </div>
                         </div>
-                        {/* Password Strength Indicator */}
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                                <span className="text-[10px] uppercase tracking-tighter font-bold text-outline">Security Strength</span>
-                                <span className="text-[10px] uppercase tracking-tighter font-bold text-primary">Moderate</span>
-                            </div>
-                            <div className="flex gap-1 h-1 w-full">
-                                <div className="flex-1 bg-primary rounded-full"></div>
-                                <div className="flex-1 bg-primary rounded-full"></div>
-                                <div className="flex-1 bg-surface-container rounded-full"></div>
-                                <div className="flex-1 bg-surface-container rounded-full"></div>
-                            </div>
-                            <p className="text-[10px] text-on-surface-variant italic">Requirement: 8+ characters with cryptographic diversity.</p>
-                        </div>
+                        
                         {/* Primary Action */}
                         <div className="pt-2">
-                            <button className="w-full fluid-indigo-gradient text-on-primary py-4 rounded-xl font-bold text-lg shadow-ambient hover:opacity-95 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2" type="submit">
-                                <span>Create Account</span>
+                            <button 
+                                className="w-full fluid-indigo-gradient text-on-primary py-4 rounded-xl font-bold text-lg shadow-ambient hover:opacity-95 active:scale-[0.98] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50" 
+                                type="submit"
+                                disabled={loading}
+                            >
+                                <span>{loading ? 'Creating Account...' : 'Create Account'}</span>
                                 <span className="material-symbols-outlined text-xl">arrow_forward</span>
                             </button>
                         </div>
