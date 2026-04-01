@@ -6,9 +6,14 @@ import { generateSHA256Hash } from '../utils/hash.js';
 
 // @desc    Upload assignment with SHA-256 hashing
 // @route   POST /api/assignments/upload
-// @access  Private
+// @access  Private (Student only)
 export const uploadAssignment = async (req, res) => {
   try {
+    // Role check (redundant if middleware is used but good for safety)
+    if (req.user.role !== 'student') {
+      return res.status(403).json({ success: false, message: 'Only students can upload assignments' });
+    }
+
     const { title } = req.body;
     
     if (!req.file) {
@@ -53,7 +58,7 @@ export const uploadAssignment = async (req, res) => {
 
 // @desc    Get user-specific submissions
 // @route   GET /api/assignments
-// @access  Private
+// @access  Private (Student)
 export const getMySubmissions = async (req, res) => {
   try {
     const submissions = await Assignment.find({ uploadedBy: req.user._id })
@@ -67,6 +72,58 @@ export const getMySubmissions = async (req, res) => {
 
   } catch (error) {
     console.error('SERVER ERROR IN GET SUBMISSIONS:', error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get all submissions (for teachers)
+// @route   GET /api/assignments/all
+// @access  Private (Teacher only)
+export const getAllAssignments = async (req, res) => {
+  try {
+    const submissions = await Assignment.find({})
+      .populate('uploadedBy', 'name email')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      count: submissions.length,
+      data: submissions,
+    });
+
+  } catch (error) {
+    console.error('SERVER ERROR IN GET ALL SUBMISSIONS:', error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Verify assignment integrity
+// @route   POST /api/assignments/verify
+// @access  Private (Teacher only)
+export const verifyAssignment = async (req, res) => {
+  try {
+    const { assignmentId, providedHash } = req.body;
+
+    const assignment = await Assignment.findById(assignmentId);
+    if (!assignment) {
+      return res.status(404).json({ success: false, message: 'Assignment not found' });
+    }
+
+    const isAuthentic = assignment.hash === providedHash;
+
+    res.json({
+      success: true,
+      authentic: isAuthentic,
+      message: isAuthentic ? 'Verification successful. Integrity confirmed.' : 'Verification failed. Document may have been tampered with.',
+      data: {
+        title: assignment.title,
+        originalHash: assignment.hash,
+        providedHash: providedHash
+      }
+    });
+
+  } catch (error) {
+    console.error('SERVER ERROR IN VERIFY:', error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
