@@ -8,6 +8,7 @@ import StudentDashboard from './pages/StudentDashboard';
 import UploadAssignment from './pages/UploadAssignment';
 import SubmissionDetails from './pages/SubmissionDetails';
 import TeacherDashboard from './pages/TeacherDashboard';
+import Verification from './pages/Verification';
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="/dashboard/student/submissions/:id" element={<SubmissionDetails />} />
         <Route path="/dashboard/teacher" element={<TeacherDashboard />} />
         <Route path="/dashboard/profile" element={<Profile />} />
+        <Route path="/verification" element={<Verification />} />
         
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
