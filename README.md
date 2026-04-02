@@ -112,10 +112,3 @@ docker-compose up --build
 
 ## 📄 License
 This project is licensed under the ISC License.
-
----
-
-## 💡 Technical Interviews Notes
-- **Why SHA-256?** It provides a fixed-size 256-bit hash that is computationally infeasible to reverse or collide, making it industry-standard for data integrity.
-- **Handling Large Files:** Multer is configured with a 10MB limit and streaming-ready for production scaling.
-- **RBAC:** Middleware in `auth.middleware.js` ensures that sensitive routes like `/all` are protected by role checks at the server level.
