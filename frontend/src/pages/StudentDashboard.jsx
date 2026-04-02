@@ -226,7 +226,13 @@ const StudentDashboard = () => {
                                             </td>
                                             <td className="px-10 py-6 text-right">
                                                 <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button className="px-4 py-2 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-colors shadow-lg shadow-slate-200">Verify</button>
+                                                    <Link 
+                                                        to="/verification" 
+                                                        state={{ assignmentId: sub._id }}
+                                                        className="px-4 py-2 bg-slate-900 text-white rounded-lg text-[10px] font-black uppercase tracking-widest hover:bg-indigo-600 transition-colors shadow-lg shadow-slate-200"
+                                                    >
+                                                        Verify
+                                                    </Link>
                                                 </div>
                                             </td>
                                         </tr>

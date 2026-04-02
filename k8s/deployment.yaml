@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hashguard-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hashguard-backend
+  template:
+    metadata:
+      labels:
+        app: hashguard-backend
+    spec:
+      containers:
+      - name: backend
+        image: hashguard-backend:latest
+        ports:
+        - containerPort: 5050
+        env:
+        - name: MONGODB_URI
+          valueFrom:
+            secretKeyRef:
+              name: hashguard-secrets
+              key: mongodb-uri
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: hashguard-secrets
+              key: jwt-secret
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hashguard-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hashguard-frontend
+  template:
+    metadata:
+      labels:
+        app: hashguard-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: hashguard-frontend:latest
+        ports:
+        - containerPort: 80

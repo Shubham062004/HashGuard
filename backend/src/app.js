@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
 import path from 'path';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes.js';
@@ -10,6 +12,10 @@ dotenv.config();
 const app = express();
 
 // Middleware
+app.use(helmet({
+  crossOriginResourcePolicy: false, // Allow cross-origin static files (uploads)
+}));
+app.use(morgan('dev'));
 app.use(cors());
 app.use(express.json());
 
