@@ -109,21 +109,41 @@ export const verifyAssignment = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Assignment not found' });
     }
 
-    const isAuthentic = assignment.hash === providedHash;
+    // Verify system integrity: Re-hash the file currently on the server
+    let currentServerHash = '';
+    if (fs.existsSync(assignment.fileUrl)) {
+      const fileBuffer = fs.readFileSync(assignment.fileUrl);
+      currentServerHash = generateSHA256Hash(fileBuffer);
+    } else {
+      return res.status(404).json({ success: false, message: 'Source file not found on server' });
+    }
+
+    // A file is authentic if:
+    // 1. The document currently on server matches the original hash in DB
+    // 2. The provided hash from the auditor matches the original hash in DB
+    const isServerFileAuthentic = currentServerHash === assignment.hash;
+    const isProvidedHashMatch = assignment.hash === providedHash;
+    const isAuthentic = isServerFileAuthentic && isProvidedHashMatch;
 
     res.json({
       success: true,
       authentic: isAuthentic,
-      message: isAuthentic ? 'Verification successful. Integrity confirmed.' : 'Verification failed. Document may have been tampered with.',
+      systemIntegrity: isServerFileAuthentic,
+      message: isAuthentic 
+        ? 'Verification successful. Cryptographic seal remains intact.' 
+        : !isServerFileAuthentic 
+          ? 'CRITICAL ALERT: Server file integrity failure. The stored file has been modified.' 
+          : 'Verification failed. The provided signature does not match our records.',
       data: {
         title: assignment.title,
         originalHash: assignment.hash,
+        serverFileHash: currentServerHash,
         providedHash: providedHash
       }
     });
 
   } catch (error) {
     console.error('SERVER ERROR IN VERIFY:', error.message);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: 'Error during cryptographic verification audit.' });
   }
 };

@@ -30,6 +30,14 @@ function App() {
           } 
         />
         <Route 
+          path="/dashboard/student/submissions" 
+          element={
+            <ProtectedRoute role="student">
+              <StudentDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
           path="/dashboard/student/upload" 
           element={
             <ProtectedRoute role="student">
