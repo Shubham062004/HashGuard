@@ -34,6 +34,20 @@ const StudentDashboard = () => {
         }
     };
 
+    const handleDownload = (sub) => {
+        API.get(`/assignments/download/${sub._id}`, { responseType: 'blob' })
+            .then((response) => {
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', sub.fileName || 'document');
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+            })
+            .catch((err) => alert('Download failed: ' + err.message));
+    };
+
     const handleLogout = () => {
         localStorage.removeItem('userInfo');
         navigate('/login');
@@ -226,6 +240,13 @@ const StudentDashboard = () => {
                                             </td>
                                             <td className="px-10 py-6 text-right">
                                                 <div className="flex justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button 
+                                                        onClick={() => handleDownload(sub)}
+                                                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-all"
+                                                        title="Download Record"
+                                                    >
+                                                        <span className="material-symbols-outlined text-xl">download</span>
+                                                    </button>
                                                     <Link 
                                                         to="/verification" 
                                                         state={{ assignmentId: sub._id }}

@@ -6,6 +6,7 @@ const TeacherDashboard = () => {
     const [submissions, setSubmissions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [verifying, setVerifying] = useState(null); // ID of being verified
+    const [verificationResults, setVerificationResults] = useState({}); // ID -> { success, message, authentic }
     const [user, setUser] = useState(null);
     const navigate = useNavigate();
 
@@ -33,20 +34,59 @@ const TeacherDashboard = () => {
         }
     };
 
+    const handleDownload = (sub) => {
+        const userInfo = localStorage.getItem('userInfo');
+        const token = userInfo ? JSON.parse(userInfo).token : '';
+        
+        // Use window.open for direct download if token can be passed in URL or use fetch
+        // For simplicity with our auth, we can use a fetch/blob approach
+        API.get(`/assignments/download/${sub._id}`, { responseType: 'blob' })
+            .then((response) => {
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', sub.fileName || 'document');
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+            })
+            .catch((err) => alert('Download failed: ' + err.message));
+    };
+
     const handleVerify = async (sub) => {
         setVerifying(sub._id);
+        // Clear previous result
+        setVerificationResults(prev => ({ ...prev, [sub._id]: null }));
+        
         try {
+            // Dashboard verify now performs a SYSTEM AUDIT (doesn't send a providedHash)
             const { data } = await API.post('/assignments/verify', {
-                assignmentId: sub._id,
-                providedHash: sub.hash
+                assignmentId: sub._id
+                // Note: No providedHash sent - this triggers a System Integrity Check on backend
             });
             
-            if (data.success) {
-                alert(data.message);
-                // Optionally refresh or update local state
-            }
+            setVerificationResults(prev => ({
+                ...prev,
+                [sub._id]: {
+                    success: data.success,
+                    authentic: data.authentic,
+                    message: data.message
+                }
+            }));
+            
+            // Clear result after 5 seconds
+            setTimeout(() => {
+                setVerificationResults(prev => ({ ...prev, [sub._id]: null }));
+            }, 5000);
+
         } catch (err) {
-            alert('Verification failed. Error: ' + (err.response?.data?.message || 'Server error'));
+            setVerificationResults(prev => ({
+                ...prev,
+                [sub._id]: {
+                    success: false,
+                    message: err.response?.data?.message || 'Server error'
+                }
+            }));
         } finally {
             setVerifying(null);
         }
@@ -188,17 +228,45 @@ const TeacherDashboard = () => {
                                                 </div>
                                             </td>
                                             <td className="px-8 py-6 text-right">
-                                                <button 
-                                                    onClick={() => handleVerify(sub)}
-                                                    disabled={verifying === sub._id}
-                                                    className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 ${
-                                                        verifying === sub._id 
-                                                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
-                                                        : 'bg-slate-900 text-white hover:bg-indigo-600 shadow-slate-200'
-                                                    }`}
-                                                >
-                                                    {verifying === sub._id ? 'Verifying...' : 'Verify Cryptography'}
-                                                </button>
+                                                <div className="flex items-center justify-end gap-3">
+                                                    <button 
+                                                        onClick={() => handleDownload(sub)}
+                                                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+                                                        title="Download Asset"
+                                                    >
+                                                        <span className="material-symbols-outlined text-xl">download</span>
+                                                    </button>
+                                                    
+                                                    {verificationResults[sub._id] ? (
+                                                        <div className={`flex items-center gap-2 animate-fade-in ${verificationResults[sub._id].authentic ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                            <span className="material-symbols-outlined text-sm">
+                                                                {verificationResults[sub._id].authentic ? 'verified' : 'report'}
+                                                            </span>
+                                                            <span className="text-[10px] font-black uppercase tracking-widest">
+                                                                {verificationResults[sub._id].authentic ? 'Authentic' : 'Tampered'}
+                                                            </span>
+                                                            <button 
+                                                                onClick={() => handleVerify(sub)}
+                                                                className="ml-1 text-slate-300 hover:text-indigo-600 transition-colors"
+                                                                title="Refresh Audit"
+                                                            >
+                                                                <span className="material-symbols-outlined text-[16px]">refresh</span>
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <button 
+                                                            onClick={() => handleVerify(sub)}
+                                                            disabled={verifying === sub._id}
+                                                            className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 ${
+                                                                verifying === sub._id 
+                                                                ? 'bg-slate-200 text-slate-400 cursor-not-allowed' 
+                                                                : 'bg-slate-900 text-white hover:bg-indigo-600 shadow-slate-200'
+                                                            }`}
+                                                        >
+                                                            {verifying === sub._id ? 'Auditing...' : 'Run Audit'}
+                                                        </button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))

@@ -31,10 +31,10 @@ export const uploadAssignment = async (req, res) => {
     // Create the database record
     const assignment = await Assignment.create({
       title,
-      fileUrl: req.file.path,
+      fileUrl: `uploads/${req.file.filename}`, // Store relative path
       fileName: req.file.originalname,
       hash,
-      uploadedBy: req.user._id, // Set by protect middleware
+      uploadedBy: req.user._id,
       timestamp: Date.now(),
     });
 
@@ -109,35 +109,44 @@ export const verifyAssignment = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Assignment not found' });
     }
 
-    // Verify system integrity: Re-hash the file currently on the server
-    let currentServerHash = '';
-    if (fs.existsSync(assignment.fileUrl)) {
-      const fileBuffer = fs.readFileSync(assignment.fileUrl);
-      currentServerHash = generateSHA256Hash(fileBuffer);
+    // 1. Verify user provided file against ledger
+    const isProvidedHashMatch = providedHash ? assignment.hash === providedHash : true;
+
+    // 2. Verify system integrity (file on server vs ledger)
+    let systemIntegrity = false;
+    let systemStatusMessage = '';
+
+    const fullPath = path.join(process.cwd(), assignment.fileUrl);
+
+    if (fs.existsSync(fullPath)) {
+      try {
+        const fileBuffer = fs.readFileSync(fullPath);
+        const currentServerHash = generateSHA256Hash(fileBuffer);
+        systemIntegrity = (currentServerHash === assignment.hash);
+        systemStatusMessage = systemIntegrity ? 'System copy verified.' : 'CRITICAL: System copy tampered!';
+      } catch (err) {
+        systemStatusMessage = 'Error reading system copy.';
+      }
     } else {
-      return res.status(404).json({ success: false, message: 'Source file not found on server' });
+      systemStatusMessage = 'System copy not found (Archived/Ephemeral).';
     }
 
-    // A file is authentic if:
-    // 1. The document currently on server matches the original hash in DB
-    // 2. The provided hash from the auditor matches the original hash in DB
-    const isServerFileAuthentic = currentServerHash === assignment.hash;
-    const isProvidedHashMatch = assignment.hash === providedHash;
-    const isAuthentic = isServerFileAuthentic && isProvidedHashMatch;
+    // A verification is successful if system is intact OR provided file matches
+    const isAuthentic = providedHash ? isProvidedHashMatch : systemIntegrity;
 
     res.json({
       success: true,
       authentic: isAuthentic,
-      systemIntegrity: isServerFileAuthentic,
+      systemIntegrity: systemIntegrity,
       message: isAuthentic 
-        ? 'Verification successful. Cryptographic seal remains intact.' 
-        : !isServerFileAuthentic 
+        ? 'Verification successful. Integrity confirmed.' 
+        : !systemIntegrity 
           ? 'CRITICAL ALERT: Server file integrity failure. The stored file has been modified.' 
-          : 'Verification failed. The provided signature does not match our records.',
+          : 'Verification failed. The provided document does not match our records.',
+      systemMessage: systemStatusMessage,
       data: {
         title: assignment.title,
         originalHash: assignment.hash,
-        serverFileHash: currentServerHash,
         providedHash: providedHash
       }
     });
@@ -145,5 +154,27 @@ export const verifyAssignment = async (req, res) => {
   } catch (error) {
     console.error('SERVER ERROR IN VERIFY:', error.message);
     res.status(500).json({ success: false, message: 'Error during cryptographic verification audit.' });
+  }
+};
+
+// @desc    Download assignment file
+// @route   GET /api/assignments/download/:id
+// @access  Private
+export const downloadAssignment = async (req, res) => {
+  try {
+    const assignment = await Assignment.findById(req.params.id);
+    if (!assignment) {
+      return res.status(404).json({ success: false, message: 'Assignment not found' });
+    }
+
+    const filePath = path.join(process.cwd(), assignment.fileUrl);
+    if (fs.existsSync(filePath)) {
+      res.download(filePath, assignment.fileName);
+    } else {
+      res.status(404).json({ success: false, message: 'File not found on server' });
+    }
+  } catch (error) {
+    console.error('DOWNLOAD ERROR:', error.message);
+    res.status(500).json({ success: false, message: 'Server error during download' });
   }
 };
